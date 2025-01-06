@@ -1,0 +1,38 @@
+
+[env]
+term = "xterm-256color"
+
+[terminal.shell]
+program = "zellij"
+args = ["-l", "welcome"]
+
+[window]
+
+startup_mode = "Maximized"
+decorations = "Full"
+
+padding.x = 10
+padding.y = 10
+
+opacity = 0.9
+blur = true
+
+[scrolling]
+history = 5000
+
+[font]
+
+normal.family = "MesloLGS Nerd Font"
+bold.family = "MesloLGS Nerd Font"
+italic.family = "MesloLGS Nerd Font"
+bold_italic.family = "MesloLGS Nerd Font"
+
+size=11.5
+
+[general]
+live_config_reload = true
+import = ["~/.config/alacritty/themes/themes/tokyo-night-storm.toml"]
+
+[terminal]
+
+

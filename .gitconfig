@@ -1,0 +1,8 @@
+[user]
+	name = José Vizcaya
+	email = josevizcaya0616@gmail.com
+	username = VizMan0616
+[color]
+	ui = auto
+[core]
+	editor = nvim
