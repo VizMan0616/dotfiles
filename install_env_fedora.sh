@@ -8,10 +8,22 @@ CONFIG_FOLDER="${HOME}/.config"
 declare -a MISSING_PKGS=()
 
 REQUIRED_PKGS=(git git-core curl wget)
-TO_INSTALL_REQUIRED_PKGS=(alacritty bat eza fd-find fzf neovim python3-neovim python3-cookiecutter python3-pip qbittorrent ripgrep zsh)
+TO_INSTALL_REQUIRED_PKGS=(alacritty bat dnf-plugins-core eza fd-find fzf neovim python3-neovim python3-cookiecutter python3-pip qbittorrent ripgrep zsh)
 # -------------------------------------------------------------------------------------
 #
 # --------------------------------------- UTILS ---------------------------------------
+copr_enable() {
+  sudo -k -S <<< "${PASSWD}" dnf copr enable "$1" -y
+}
+
+config_manager() {
+  if [[ $(rpm -E %fedora) < 40 ]]; then
+    sudo -k -S <<< "${PASSWD}" dnf config-manager addrepo --add-repo "$1"
+  else
+    sudo -k -S <<< "${PASSWD}" dnf config-manager addrepo --from-repofile="$1"
+  fi
+}
+
 upgrade() {
   sudo -k -S <<< "${PASSWD}" dnf upgrade --refresh
 }
@@ -74,8 +86,7 @@ configure_docker () {
   docker_deps=(docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin)
   new_docker_dir="${HOME}/docker"
 
-  install "dnf-plugins-core" \
-  && sudo -k -S <<< "${PASSWD}" dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
+  config_manager "https://download.docker.com/linux/fedora/docker-ce.repo"
   
   # Install all necessaries for configure docker
   install "${docker_deps[@]}"
@@ -109,12 +120,12 @@ configure_neovim() {
 }
 
 configure_lazygit () {
-  sudo -k -S <<< "${PASSWD}" dnf copr enable atim/lazygit -y
+  copr_enable "atim/lazygit"
   install "lazygit"
 }
 
 configure_zellij() {
-  sudo -k -S <<< "${PASSWD}" dnf copr enable varlad/zellij -y
+  copr_enable "varlad/zellij"
   install "zellij"
 
   rsync -av ${PWD}/.config/zellij/** ${CONFIG_FOLDER}/zellij
@@ -142,6 +153,11 @@ main () {
   rsync -av ${PWD}/.ssh ${HOME} \
   && rsync -av ${PWD}/.gitconfig ${HOME}
   && rsync -av ${PWD}/.fzf.zsh ${HOME}
+
+  # Install browsers
+  # ------------------ Brave ------------------
+  config_manager "https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo"
+  install "brave-browser"
 
   configure_shell
   configure_docker
