@@ -151,7 +151,7 @@ main () {
   install "${packages[@]}"
 
   rsync -av ${PWD}/.ssh ${HOME} \
-  && rsync -av ${PWD}/.gitconfig ${HOME}
+  && rsync -av ${PWD}/.gitconfig ${HOME} \
   && rsync -av ${PWD}/.fzf.zsh ${HOME}
 
   # Install browsers
