@@ -140,9 +140,6 @@ configure_auto_cpufreq() {
 }
 
 main () {
-  read -sp 'Password:' PASSWD
-  echo
-
   check_required_to_install
   mkdir -p ${TEMP_FOLDER}
 
