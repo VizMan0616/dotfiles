@@ -150,9 +150,9 @@ main () {
   packages=(${MISSING_PKGS[@]} ${TO_INSTALL_REQUIRED_PKGS[@]})
   install "${packages[@]}"
 
-  rsync -av ${PWD}/.ssh ${HOME} \
-  && rsync -av ${PWD}/.gitconfig ${HOME} \
-  && rsync -av ${PWD}/.fzf.zsh ${HOME}
+  rsync -av ${PWD}/.ssh ${HOME}
+  rsync -av ${PWD}/.gitconfig ${HOME}
+  rsync -av ${PWD}/.fzf.zsh ${HOME}
 
   # Install browsers
   # ------------------ Brave ------------------
