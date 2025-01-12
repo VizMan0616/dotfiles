@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # ------------------------------------ CONSTANTS --------------------------------------
-PASSWD="anypassword"
 TEMP_FOLDER="${PWD}/temps"
 CONFIG_FOLDER="${HOME}/.config"
 
@@ -141,6 +140,7 @@ configure_auto_cpufreq() {
 }
 
 main () {
+  read -sp 'Password:' PASSWD
   check_required_to_install
   mkdir -p ${TEMP_FOLDER}
 
