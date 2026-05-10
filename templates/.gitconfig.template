@@ -1,0 +1,8 @@
+[user]
+	name = GIT_NAME
+	email = GIT_EMAIL
+	username = GIT_USERNAME
+[color]
+	ui = auto
+[core]
+	editor = GIT_EDITOR
