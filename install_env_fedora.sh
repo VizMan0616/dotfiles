@@ -63,7 +63,7 @@ check_required_to_install () {
 configure_dnf () {
   dnf_conf="/etc/dnf/dnf.conf"
 
-  cat > "$dnf_conf" << EOF
+  cat > "$dnf_conf" < EOF
   [main]
   gpgcheck=True
   installonly_limit=3
