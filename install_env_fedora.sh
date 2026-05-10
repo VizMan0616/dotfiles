@@ -9,7 +9,10 @@ CONFIG_FOLDER="${HOME}/.config"
 declare -a MISSING_PKGS=()
 
 REQUIRED_PKGS=(git git-core curl wget)
-TO_INSTALL_REQUIRED_PKGS=(alacritty bat dnf-plugins-core eza fd-find fzf neovim python3-neovim python3-pip qbittorrent ripgrep zsh)
+TO_INSTALL_REQUIRED_PKGS=(alacritty bat dnf-plugins-core eza fd-find fzf neovim python3-neovim python3-pip qbittorrent ripgrep zsh zip unzip)
+TO_INSTALL_OTHER_PKGS=(thunderbird discord)
+
+TO_INSTALL_PYTHON_PKGS=(pipx)
 
 # --------------------------------------- UTILS ---------------------------------------
 copr_enable () {
@@ -33,7 +36,7 @@ install () {
 }
 
 install_python_pkg () {
-  pip install "$1"
+  python3 -m pip install --user "$1"
 }
 
 install_python_pkgs () {
@@ -61,6 +64,8 @@ check_required_to_install () {
 
 # --------------------------------------- CONFIGS -------------------------------------
 configure_dnf () {
+  printf "Configuring dnf..."
+
   dnf_conf="/etc/dnf/dnf.conf"
 
   cat > "$dnf_conf" < EOF
@@ -79,17 +84,35 @@ configure_dnf () {
   install "https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm"
 }
 
+configure_pipx_and_uv () {
+  printf "Configuring pipx..."
+
+  install_python_pkgs "${TO_INSTALL_PYTHON_PKGS[@]}"
+  python3 -m pipx ensurepath
+
+  curl -LsSf https://astral.sh/uv/install.sh | sh -s -- -y
+  uv tool update-shell
+}
+
 configure_shell () {
   omz_custom_path=${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}
-  mkdir -p ${HOME}/.fonts
-  rsync -av ${PWD}/fonts ${HOME}/.fonts # Move fonts folder for prior config
+
+  printf "Configuring shell (I'm using zsh)..."
 
   if [[ $SHELL != "zsh//\"/" ]]; then
     printf "ZSH is alrady your default shell!\n"
   else
-    chsh chsh -s "$(which zsh)" $REAL_USER
+    chsh chsh -s "$(which zsh)" $USER
     printf "ZSH was successfully configurated!\n"
   fi
+
+  printf "Configuring Nerd Font (MesloLG)..."
+
+  curl -o "${TEMP_FOLDER}/Meslo.zip" -fsSL https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/Meslo.zip
+  mkdir -p ${HOME}/.fonts
+  unzip "${TEMP_FOLDER}/Meslo.zip" -d "${HOME}/.fonts"
+
+  printf "Now configuring OMZ..."
 
   # Install Oh-My-ZSH
   sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
@@ -97,6 +120,8 @@ configure_shell () {
   # Install custom plugins
   git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${omz_custom_path}/plugins/zsh-syntax-highlighting
   git clone https://github.com/Aloxaf/fzf-tab ${omz_custom_path}/plugins/fzf-tab
+
+  printf "Now configuring PowerLevel10k..."
 
   # Install PowerLevel10k
   git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ${omz_custom_path}/themes/powerlevel10k
@@ -106,6 +131,8 @@ configure_shell () {
 }
 
 configure_rust () {
+  printf "Configuring Rust..."
+
   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
   source "$HOME/.cargo/env"
 
@@ -114,6 +141,8 @@ configure_rust () {
 }
 
 configure_docker () {
+  printf "Configuring docker..."
+
   docker_deps=(docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin)
   new_docker_dir="${HOME}/docker"
   daemon_template_path="${PWD}/templates/daemon.json.template"
@@ -128,6 +157,8 @@ configure_docker () {
   usermod -aG docker $USER
 
   # Move docker to HOME dir avoiding consuming root disk space
+  printf "Moving docker to ${HOME}..."
+
   systemctl stop docker
   systemctl stop docker.socket
   systemctl stop containerd
@@ -140,6 +171,8 @@ configure_docker () {
 }
 
 configure_neovim () {
+  printf "Configuring neovim using NvChad..."
+
   # Configure neovim
   git clone https://github.com/NvChad/NvChad ${CONFIG_FOLDER}/nvim
   rm -rf ${CONFIG_FOLDER}/nvim/.git
@@ -148,26 +181,35 @@ configure_neovim () {
 }
 
 configure_lazygit () {
+  printf "Configuring lazygit..."
+
   copr_enable "atim/lazygit"
   install "lazygit"
 }
 
 configure_zellij () {
+  printf "Configuring Zellij..."
+
   zellij_release="0.44.2"
   zellij_fname="zellij-no-web-x86_64-unknown-linux-musl"
   zellij_dl_url="https://github.com/zellij-org/zellij/releases/download/v$zellij_release/$zellij_fname.tar.gz"
 
-  curl -sL -o "$zellij_fname.tar.gz" $zellij_dl_url
+  curl -o "${TEMP_FOLDER}/$zellij_fname.tar.gz" -fsSL $zellij_dl_url
+  tar -xzvf "${TEMP_FOLDER}/$zellij_fname.tar.gz" 
+
+  rsync -av "${TEMP_FOLDER}/zellij" "/usr/local/bin"
   rsync -av ${PWD}/config/zellij ${CONFIG_FOLDER}/zellij
 }
 
 configure_gitconf() {
-  git_name="$1"
-  git_email="$2"
-  git_username="$3"
-  git_editor="$4"
+  read -e -p "Enter your Git Name: " git_name
+  read -e -p "Enter your Git Email: " git_email
+  read -e -p "Enter your Git Username: " git_username
+  read -e -p "Enter editor to use in Git: " git_edito
 
   gitconf_template="${PWD}/templates/.gitconfig.template"
+  
+  printf "Configuring the git config..."
 
   sed -e "s|GIT_NAME|$git_name|g" \
       -e "s|GIT_EMAIL|$git_email|g" \
@@ -196,11 +238,6 @@ decrypt_ssh_key () {
   fi
 }
 
-change_permission () {
-  chown $USER "${HOME}/.gitconfig"
-  chown $USER "${HOME}/."
-}
-
 main () {
   if [[ $EUID -ne 0 ]]; then
     printf "The installation script must be run as sudo!\n"
@@ -213,21 +250,23 @@ main () {
   upgrade # First system upgrade
   configure_dnf
 
-  packages=(${MISSING_PKGS[@]} ${TO_INSTALL_REQUIRED_PKGS[@]})
+  packages=(${MISSING_PKGS[@]} ${TO_INSTALL_REQUIRED_PKGS[@]} ${TO_INSTALL_OTHER_PKGS[@]})
   install "${packages[@]}"
 
-  # commented for now since we need to send the actual params
-  # configure_gitconf 
+  configure_gitconf
+  decrypt_ssh_key
+
   rsync -av ${PWD}/.fzf.zsh ${HOME}
 
   configure_shell
+  configure_pipx
   configure_docker
   configure_neovim
   configure_lazygit
   configure_zellij
-  decrypt_ssh_key
-
   configure_rust
+
+  uv tool install cookiecutter
 
   # Since alacritty does need a few packages
   # we can configure in the main method
